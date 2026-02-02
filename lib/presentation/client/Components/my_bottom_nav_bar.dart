@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:prototipo1_app/presentation/client/screens/Home/home_screen.dart';
-import 'package:prototipo1_app/presentation/client/screens/calendar/calendar.dart';
+import 'package:prototipo1_app/presentation/client/screens/calendar/calendar_screen.dart';
+//import 'package:prototipo1_app/presentation/client/screens/citas/appointment_schedule_screen.dart';
+//import 'package:prototipo1_app/util/notification_service.dart';
 
 class MyBottomNavBar extends StatelessWidget {
   const MyBottomNavBar({super.key});
@@ -13,21 +15,21 @@ class MyBottomNavBar extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            offset: Offset(0, -10),
+            offset: const Offset(0, -10),
             blurRadius: 35,
             color: Theme.of(context).colorScheme.primary.withOpacity(0.38),
           ),
         ],
       ),
-
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
+          // HOME
           IconButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const HomeScreen ()),
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
               );
             },
             icon: Icon(
@@ -37,11 +39,12 @@ class MyBottomNavBar extends StatelessWidget {
             ),
           ),
 
+          // CALENDARIO
           IconButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CalendarScreen ()),
+                MaterialPageRoute(builder: (context) => const CalendarScreen()),
               );
             },
             icon: Icon(
@@ -51,8 +54,14 @@ class MyBottomNavBar extends StatelessWidget {
             ),
           ),
 
+          // 🔔 NOTIFICACIÓN
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            },
             icon: Icon(
               Icons.add_task,
               size: 30,

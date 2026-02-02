@@ -1,7 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+//import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:prototipo1_app/config/client/client_service.dart';
+
 import 'package:prototipo1_app/config/client/session.dart';
 import 'package:prototipo1_app/presentation/client/Components/my_bottom_nav_bar.dart';
+import 'package:prototipo1_app/presentation/client/screens/utils/utils.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,6 +19,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isEditing = false;
+  bool _isUploadingPhoto = false;
+
+  final ClientService _clientService = ClientService();
+  final ImagePicker _picker = ImagePicker();
 
   late TextEditingController nameController;
   late TextEditingController emailController;
@@ -24,22 +35,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final user = SessionApp.usuarioActual;
 
-    nameController = TextEditingController(
-      text: user?.nombreCompleto ?? '',
-    );
-
-    emailController = TextEditingController(
-      text: user?.correo ?? '',
-    );
-
-    phoneController = TextEditingController(
-      text: user?.telefono ?? '',
-    );
-
-    addressController = TextEditingController(
-      text: 'Dirección no registrada',
-    );
+    nameController = TextEditingController(text: user?.nombreCompleto ?? '');
+    emailController = TextEditingController(text: user?.correo ?? '');
+    phoneController = TextEditingController(text: user?.telefono ?? '');
+    addressController = TextEditingController(text: user?.fechaNacimiento?.toIso8601String() ?? '');
   }
+
+  // ─────────────────────────────────────────────
+  // Cambiar foto de perfil
+  // ─────────────────────────────────────────────
+  Future<void> _changeProfilePhoto() async {
+    final user = SessionApp.usuarioActual;
+    if (user == null) return;
+
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+
+    try {
+      final updatedCliente = await _clientService.updateFotoPerfil(
+        SessionApp.usuarioActual!.idCliente,
+        File(pickedFile.path),
+      );
+
+      // Actualizar sesión
+      SessionApp.usuarioActual = updatedCliente;
+
+      setState(() {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al actualizar la foto de perfil'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
+
+  // String _getProfileImage() {
+  //   final baseUrl = dotenv.env['ENDPOINT_API6'] ?? ' ';
+  //   final user = SessionApp.usuarioActual;
+
+  //   if (user?.fotoPerfil == null || user!.fotoPerfil!.isEmpty) {
+  //     return 'assets/images/polar.jpeg';
+  //   }
+
+  //   final foto = user.fotoPerfil!;
+
+  //   // Si es ruta relativa (backend)
+     
+  //   debugPrint('Base URL para fotos: $baseUrl$foto');
+  //   return  '$baseUrl$foto';
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             IconButton(
               icon: const Icon(Icons.check, color: Colors.green),
               onPressed: () {
-                // TODO: guardar en backend
+                // TODO: guardar cambios de texto
                 setState(() => isEditing = false);
               },
             ),
@@ -72,20 +129,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.close, color: Colors.red),
               onPressed: () => setState(() => isEditing = false),
             ),
-          ]
+          ],
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25),
         child: Column(
           children: [
-            // FOTO DE PERFIL REAL
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: user?.fotoPerfil != null
-                  ? NetworkImage(user!.fotoPerfil!)
-                  : const AssetImage('assets/images/polar.jpeg')
-                      as ImageProvider,
+            // ───── FOTO DE PERFIL ─────
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 55,
+                  backgroundColor: Colors.grey.shade300,
+
+                  backgroundImage: NetworkImage(Utils.getProfileImage(user!)),
+                ),
+
+                if (_isUploadingPhoto) const CircularProgressIndicator(),
+
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _changeProfilePhoto,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 12),
@@ -96,13 +179,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             Text(
-              user?.correo ?? '',
+              user.correo,
               style: const TextStyle(color: Colors.grey),
             ),
 
             const SizedBox(height: 20),
 
-            // ESTADÍSTICAS
+            // ───── ESTADÍSTICAS ─────
             Container(
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
               decoration: BoxDecoration(
@@ -158,7 +241,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// --- Widgets auxiliares ---
+// ─────────────────────────────────────────────
+// Widgets auxiliares
+// ─────────────────────────────────────────────
 
 class _ProfileStat extends StatelessWidget {
   final String label;
@@ -170,11 +255,18 @@ class _ProfileStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
       ],
     );
   }

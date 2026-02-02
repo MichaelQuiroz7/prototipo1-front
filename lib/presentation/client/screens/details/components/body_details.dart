@@ -1,19 +1,27 @@
+//import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:prototipo1_app/config/employed/tratamiento_service.dart';
 import 'package:prototipo1_app/presentation/client/Components/employee/recomend_treatment.dart';
 import 'package:prototipo1_app/presentation/client/Components/title_with_custom_underline.dart';
+import 'package:prototipo1_app/presentation/client/dtoCliente/client_model.dart';
+import 'package:prototipo1_app/presentation/client/screens/citas/agendar_cita_screen.dart';
 import 'package:prototipo1_app/presentation/employee/dto/tratamiento_model.dart';
 
 class BodyDetails extends StatefulWidget {
   final int idEspecialidad;
   final String nombreEspecialidad;
   final String? imagenEspecialidad;
+  final Cliente? clienteOverride;
+
 
   const BodyDetails({
     super.key,
     required this.idEspecialidad,
     required this.nombreEspecialidad,
     this.imagenEspecialidad,
+    this.clienteOverride,
   });
 
   @override
@@ -28,6 +36,7 @@ class _BodyDetailsState extends State<BodyDetails> {
   void initState() {
     super.initState();
     _futureTratamientos = _loadTratamientos();
+    
   }
 
   Future<List<Tratamiento>> _loadTratamientos() async {
@@ -37,8 +46,10 @@ class _BodyDetailsState extends State<BodyDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final baseUrl = dotenv.env['ENDPOINT_API6'] ?? ' ';
     final imageUrl = widget.imagenEspecialidad != null
-        ? 'http://192.168.1.20:3000${widget.imagenEspecialidad}'
+        //? 'http://192.168.1.20:3000${widget.imagenEspecialidad}'
+        ? '$baseUrl${widget.imagenEspecialidad}'
         : 'assets/images/placeholder.png';
 
     final primaryColor = Theme.of(context).colorScheme.primary;
@@ -141,13 +152,23 @@ class _BodyDetailsState extends State<BodyDetails> {
                   itemBuilder: (context, index) {
                     final t = tratamientos[index];
                     final imageUrl = t.imagen != null
-                        ? 'http://192.168.1.20:3000${t.imagen}'
+                        //? 'http://192.168.1.20:3000${t.imagen}'
+                        ? '$baseUrl${t.imagen}'
                         : 'assets/images/placeholder.png';
 
                     return RecomendTreatment(
                       primaryColor: primaryColor,
                       imageUrl: imageUrl,
                       t: t,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AgendarCitaScreen(tratamiento: t, clienteOverride: widget.clienteOverride),
+                          ),
+                        );
+                      },
                     );
                   },
                 );

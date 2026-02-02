@@ -6,10 +6,12 @@ class HeaderWithSearchBox extends StatelessWidget {
     super.key,
     required this.size,
     required TextEditingController searchController,
+    this.onChanged,
   }) : _searchController = searchController;
 
   final Size size;
   final TextEditingController _searchController;
+  final ValueChanged<String>? onChanged; // ✅ NUEVO
 
   String _buildGreeting() {
     final cliente = SessionApp.usuarioActual;
@@ -66,7 +68,9 @@ class HeaderWithSearchBox extends StatelessWidget {
                   BoxShadow(
                     offset: const Offset(0, 10),
                     blurRadius: 50,
-                    color: Theme.of(context).colorScheme.primary
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
                         .withAlpha((0.23 * 255).round()),
                   ),
                 ],
@@ -74,10 +78,10 @@ class HeaderWithSearchBox extends StatelessWidget {
               child: TextField(
                 controller: _searchController,
                 style: const TextStyle(color: Colors.black),
-                onSubmitted: (value) {
-                  // ignore: avoid_print
-                  print('Search submitted: $value');
-                },
+
+                // ✅ AQUÍ SE CONECTA
+                onChanged: onChanged,
+
                 decoration: InputDecoration(
                   hintText: "Buscar",
                   hintStyle: TextStyle(
@@ -88,19 +92,12 @@ class HeaderWithSearchBox extends StatelessWidget {
                   ),
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      final q = _searchController.text;
-                      // ignore: avoid_print
-                      print('Search button pressed: $q');
-                    },
-                    icon: Icon(
-                      Icons.search,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withAlpha((0.5 * 255).round()),
-                    ),
+                  suffixIcon: Icon(
+                    Icons.search,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withAlpha((0.5 * 255).round()),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,

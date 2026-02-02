@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:prototipo1_app/config/employed/tratamiento_service.dart';
 import 'package:prototipo1_app/presentation/employee/dto/especialidad_model.dart';
@@ -269,6 +270,7 @@ class _EspecialidadesScreenState extends State<EspecialidadesScreen> {
   // ===================================================
   @override
   Widget build(BuildContext context) {
+    final baseUrl = dotenv.env['ENDPOINT_API6'] ?? ' ';
     final tratamientosFiltrados = _selectedEspecialidadId != null
         ? _tratamientos
             .where((t) => t.idEspecialidad == _selectedEspecialidadId)
@@ -314,7 +316,8 @@ class _EspecialidadesScreenState extends State<EspecialidadesScreen> {
                       itemBuilder: (context, index) {
                         final t = tratamientosFiltrados[index];
                         final imageUrl = t.imagen != null
-                            ? 'http://192.168.1.20:3000${t.imagen}'
+                            //? 'http://192.168.1.20:3000${t.imagen}'
+                            ? '$baseUrl${t.imagen}'
                             : null;
                         return Card(
                           elevation: 3,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -41,6 +43,18 @@ class ClientService {
     }
   }
 
+   /// Obtener todos los EMPLEADOS
+  Future<List<Cliente>> getAllEmpleados() async {
+    try {
+      final response = await _dio.get('/ObtenerEmpleados');
+      final List data = response.data;
+      return data.map((e) => Cliente.fromJson(e)).toList();
+    } on DioException catch (e) {
+      _handleError(e);
+      rethrow;
+    }
+  }
+
   /// Obtener cliente por ID
   Future<Cliente?> getClienteById(int id) async {
     try {
@@ -73,6 +87,36 @@ class ClientService {
       rethrow;
     }
   }
+
+
+  // Actualizar foto de perfil del cliente
+Future<Cliente> updateFotoPerfil(int id, File fotoFile) async {
+  try {
+    final formData = FormData.fromMap({
+      'fotoPerfil': await MultipartFile.fromFile(
+        fotoFile.path,
+        filename: fotoFile.path.split('/').last,
+      ),
+    });
+
+    final response = await _dio.patch(
+      '/ActualizarFotoPerfil/$id',
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      ),
+    );
+
+    return Cliente.fromJson(response.data);
+  } on DioException catch (e) {
+    _handleError(e);
+    rethrow;
+  }
+}
+
+
 
   /// Actualizar solo la cédula
   Future<Cliente> updateCedula(int id, String cedula) async {

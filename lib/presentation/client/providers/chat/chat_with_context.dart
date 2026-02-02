@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:image_picker/image_picker.dart';
 import 'package:prototipo1_app/config/gemini/gemini_impl.dart';
@@ -14,13 +15,12 @@ final uuid = Uuid();
 
 @Riverpod(keepAlive: true)
 class ChatWithContext extends _$ChatWithContext {
-
   final gemini = GeminiImpl();
 
   late types.User geminiUser;
   late types.User chatUser;
   late String chatId;
-  
+
   @override
   List<types.Message> build() {
     geminiUser = ref.read(geminiUserProvider);
@@ -34,19 +34,16 @@ class ChatWithContext extends _$ChatWithContext {
     required types.User author,
     List<XFile> images = const [],
   }) async {
-
-    if(images.isNotEmpty){
+    if (images.isNotEmpty) {
       await _addTextMessageWithImages(
         partialText: partialText,
         author: author,
-        images: images
-        
+        images: images,
       );
       return;
     }
 
     _addTextMessage(partialText: partialText, author: author);
-  
   }
 
   void _addTextMessage({
@@ -55,14 +52,12 @@ class ChatWithContext extends _$ChatWithContext {
   }) {
     _createTextMessage(author, partialText.text);
     _geminiTextResponseStream(partialText.text);
-
   }
-
 
   Future<void> _addTextMessageWithImages({
     required types.PartialText partialText,
     required types.User author,
-    required List<XFile> images
+    required List<XFile> images,
   }) async {
     // upload/create images sequentially to ensure size is available
     for (final image in images) {
@@ -71,71 +66,48 @@ class ChatWithContext extends _$ChatWithContext {
 
     _createTextMessage(author, partialText.text);
     // Optionally trigger AI response here
-    _geminiTextResponseStream(
-      partialText.text,
-      images: images
-      );
-
+    _geminiTextResponseStream(partialText.text, images: images);
   }
 
-
-  /// 📌 Genera un plan usando el odontograma usando SOLO getChatStream()
-Future<String> generarPlanConOdontograma(String prompt) async {
+Future<String> generarPlanConOdontogramaFull(String prompt) async {
   try {
-    final buffer = StringBuffer();
-
-    // Activar indicador "Gemini está escribiendo"
-    _setGeminiWritingStatus(true);
-
-    final stream = await gemini.getChatStream(prompt, chatId);
-
-    // Escuchar cada chunk del stream
-    final completer = Completer<String>();
-
-    stream.listen(
-      (chunk) {
-        buffer.write(chunk.toString());
-      },
-      onError: (e) {
-        print("Error en generarPlanConOdontograma: $e");
-        if (!completer.isCompleted) completer.complete('');
-      },
-      onDone: () {
-        _setGeminiWritingStatus(false);
-        if (!completer.isCompleted) {
-          completer.complete(buffer.toString().trim());
-        }
-      },
-    );
-
-    // ⏳ Esperar a que termine el stream
-    return await completer.future;
-
+    final response = await gemini.chatPlanDentalFull(prompt, chatId);
+    debugPrint('Respuesta chat with context Plan de Cuidado Full correctamente');
+    //debugPrint('Respuesta chat with context Plan de Cuidado Full: $response');
+    //print(  " Respuesta chat with context Plan de Cuidado Full: $response");
+    return response.toString();
   } catch (e) {
-    print("Error fatal en generarPlanConOdontograma: $e");
-    _setGeminiWritingStatus(false);
-    return '';
+    debugPrint('Error en generarPlanConOdontogramaFull: $e');
+    //print(" Error en generarPlanConOdontogramaFull: $e");
+    return "";
   }
 }
 
 
-
-  Future<void> _geminiTextResponseStream(String prompt, {List<XFile> images = const []}) async {
+  
+  Future<void> _geminiTextResponseStream(
+    String prompt, {
+    List<XFile> images = const [],
+  }) async {
     final geminiUser = ref.read(geminiUserProvider);
 
     _setGeminiWritingStatus(true);
     try {
       final stream = await gemini.getChatStream(prompt, chatId, files: images);
-      final subscription = stream.listen((chunk) {
-        // Convert chunk to string and add as message
-        final text = chunk.toString();
-        _createTextMessage(geminiUser, text);
-      }, onError: (e, st) {
-        // ignore: avoid_print
-        print('BasicChat._geminiTextResponseStream error: $e\n$st');
-      }, onDone: () {
-       _setGeminiWritingStatus(false);
-      });
+      final subscription = stream.listen(
+        (chunk) {
+          // Convert chunk to string and add as message
+          final text = chunk.toString();
+          _createTextMessage(geminiUser, text);
+        },
+        onError: (e, st) {
+          // ignore: avoid_print
+          print('BasicChat._geminiTextResponseStream error: $e\n$st');
+        },
+        onDone: () {
+          _setGeminiWritingStatus(false);
+        },
+      );
 
       // Optionally await the stream completion if you want this method
       // to complete after the stream is done. Here we await onDone via
@@ -145,17 +117,14 @@ Future<String> generarPlanConOdontograma(String prompt) async {
       // ignore: avoid_print
       print('BasicChat._geminiTextResponseStream failed: $e\n$st');
       _setGeminiWritingStatus(false);
-    }
-    finally {
+    } finally {
       _setGeminiWritingStatus(false);
     }
   }
 
-
   //Helpers Methods
 
-
-  void newChat(){
+  void newChat() {
     chatId = uuid.v4();
     state = [];
   }
@@ -165,25 +134,22 @@ Future<String> generarPlanConOdontograma(String prompt) async {
   //   state = [...historyChat, ...state];
   // }
 
-
-
   void _setGeminiWritingStatus(bool isWriting) {
     final geminiIsWriting = ref.read(isGeminiWritingProvider.notifier);
     isWriting
-    ? geminiIsWriting.setIsWriting()
-    : geminiIsWriting.setIsNotWriting();
+        ? geminiIsWriting.setIsWriting()
+        : geminiIsWriting.setIsNotWriting();
   }
 
   void _createTextMessage(types.User author, String partialText) {
     final message = types.TextMessage(
-      author: author, 
-      id: uuid.v4(), 
+      author: author,
+      id: uuid.v4(),
       text: partialText,
-      );
+    );
 
     state = [message, ...state];
   }
-
 
   Future<void> _createImageMessage(types.User author, XFile image) async {
     final message = types.ImageMessage(
@@ -196,7 +162,4 @@ Future<String> generarPlanConOdontograma(String prompt) async {
 
     state = [message, ...state];
   }
-
-
 }
-

@@ -8,7 +8,8 @@ import 'package:prototipo1_app/presentation/client/Components/build_text_field.d
 import 'package:prototipo1_app/presentation/client/dtoCliente/client_model.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final int? idRolRegister;
+  const RegisterScreen({super.key, this.idRolRegister});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -57,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         telefono: _telefonoController.text.trim(),
         passwordHash: _passwordController.text.trim(),
         proveedorAuth: 'local',
-        idRol: 1,
+        idRol: widget.idRolRegister ?? 3,
         fechaNacimiento: _fechaNacimientoController.text.isNotEmpty
             ? DateFormat('dd/MM/yyyy').parse(_fechaNacimientoController.text)
             : null,
@@ -350,7 +351,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 //     },
                 //   ),
                 // ),
-                
                 const SizedBox(height: 20),
 
                 // YA TIENES CUENTA

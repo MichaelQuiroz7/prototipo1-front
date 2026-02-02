@@ -24,18 +24,18 @@ const appMenuItems = <MenuItem>[
     link: '/profile',
     icon: Icons.person,
   ),
-  MenuItem(
-    title: 'Notificaciones',
-    subTitle: 'Alertas y mensajes importantes',
-    link: '/notifications',
-    icon: Icons.notification_important,
-  ),
-  MenuItem(
-    title: 'Promociones',
-    subTitle: 'Ofertas y descuentos disponibles',
-    link: '/promotions',
-    icon: Icons.card_giftcard,
-  ),
+  // MenuItem(
+  //   title: 'Notificaciones',
+  //   subTitle: 'Alertas y mensajes importantes',
+  //   link: '/notifications',
+  //   icon: Icons.notification_important,
+  // ),
+  // MenuItem(
+  //   title: 'Promociones',
+  //   subTitle: 'Ofertas y descuentos disponibles',
+  //   link: '/promotions',
+  //   icon: Icons.card_giftcard,
+  // ),
   MenuItem(
     title: 'Social',
     subTitle: 'Conecta con otros usuarios',
@@ -51,7 +51,7 @@ const appMenuItems = <MenuItem>[
   MenuItem(
     title: 'Sugerencias y Reclamos',
     subTitle: 'Envíanos tu opinión',
-    link: '/feedback',
+    link: '/suggestionBox',
     icon: Icons.feedback,
   ),
   MenuItem(
@@ -66,12 +66,12 @@ const appMenuItems = <MenuItem>[
     link: '/especialidades',
     icon: Icons.feedback,
   ),
-  MenuItem(
-    title: 'odontograma',
-    subTitle: 'Ver/Agregar odontograma',
-    link: '/odontograma',
-    icon: Icons.feedback,
-  ),
+  // MenuItem(
+  //   title: 'odontograma',
+  //   subTitle: 'Ver/Agregar odontograma',
+  //   link: '/clientes',
+  //   icon: Icons.feedback,
+  // ),
   MenuItem(
     title: 'odontograma Cliente',
     subTitle: 'Ver/Agregar odontograma',

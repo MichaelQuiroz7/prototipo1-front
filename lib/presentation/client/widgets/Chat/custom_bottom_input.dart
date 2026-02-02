@@ -153,15 +153,12 @@ class _ImageAttachments extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children:
-            images
-                .map(
-                  (e) => _ImageAttachment(
-                    path: e.path,
-                    onDeleteImage: onDeleteImage,
-                  ),
-                )
-                .toList(),
+        children: images
+            .map(
+              (e) =>
+                  _ImageAttachment(path: e.path, onDeleteImage: onDeleteImage),
+            )
+            .toList(),
       ),
     );
   }
@@ -180,16 +177,15 @@ class _ImageAttachment extends StatelessWidget {
         // Mostrar imagen en pantalla completa o realizar alguna acción
         showDialog(
           context: context,
-          builder:
-              (context) => Dialog(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(File(path)),
-                  ),
-                ),
+          builder: (context) => Dialog(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(File(path)),
               ),
+            ),
+          ),
         );
       },
       onDoubleTap: () {

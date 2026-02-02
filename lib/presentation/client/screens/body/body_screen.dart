@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prototipo1_app/config/client/session.dart';
 import 'package:prototipo1_app/config/employed/tratamiento_service.dart';
@@ -7,13 +8,13 @@ import 'package:prototipo1_app/config/promotions/promotion_items.dart';
 import 'package:prototipo1_app/presentation/client/Components/floating_bubble.dart';
 import 'package:prototipo1_app/presentation/client/Components/header_with_searchbox.dart';
 import 'package:prototipo1_app/presentation/client/Components/recomend_plan_card.dart';
-import 'package:prototipo1_app/presentation/client/Components/recomend_promotion.dart';
 import 'package:prototipo1_app/presentation/client/Components/title_with_custom_underline.dart';
 import 'package:prototipo1_app/presentation/client/providers/helper/odontograma_plan_helper.dart';
 import 'package:prototipo1_app/presentation/client/screens/details/details_screen.dart';
 import 'package:prototipo1_app/presentation/employee/dto/especialidad_model.dart';
+import 'package:prototipo1_app/presentation/employee/dto/tratamiento_model.dart';
 
-import '../../Components/title_with_more_btn.dart' show TitleWithMoreBtn;
+import '../../Components/title_with_more_btn.dart';
 
 class BodyScreen extends ConsumerStatefulWidget {
   const BodyScreen({super.key});
@@ -29,26 +30,29 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
   );
   final TratamientosService _service = TratamientosService();
 
-  int _currentPage = 0;
   Timer? _timer;
+  int _currentPage = 0;
 
   List<Especialidad> _especialidades = [];
-  bool _loading = true;
-  final String baseUrl = 'http://192.168.1.20:3000';
+  //List<Tratamiento> _todosTratamientos = [];
+  Map<int, List<Tratamiento>> _tratamientosPorEspecialidad = {};
 
+  bool _loading = true;
+  String _query = '';
+
+  final String baseUrl = dotenv.env['ENDPOINT_API6'] ?? '';
+
+  // ======================================================
+  // INIT
+  // ======================================================
   @override
   void initState() {
     super.initState();
-    _loadEspecialidades();
+    _loadDatos();
 
-    // Carrusel automático
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_promoController.hasClients) {
-        if (_currentPage < 2) {
-          _currentPage++;
-        } else {
-          _currentPage = 0;
-        }
+        _currentPage = (_currentPage + 1) % 3;
         _promoController.animateToPage(
           _currentPage,
           duration: const Duration(milliseconds: 600),
@@ -57,23 +61,65 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
       }
     });
 
-    // ⭐ Mostrar recomendación al inicio
     Future.delayed(const Duration(milliseconds: 800), () {
       _mostrarRecomendacionBucal();
     });
   }
 
-  Future<void> _loadEspecialidades() async {
+  // ======================================================
+  // CARGA DE DATOS (SIN NUEVOS ENDPOINTS)
+  // ======================================================
+  Future<void> _loadDatos() async {
     try {
-      final data = await _service.getAllEspecialidades();
+      final especialidades = await _service.getAllEspecialidades();
+      final tratamientos = await _service.getAllTratamientos();
+
+      final Map<int, List<Tratamiento>> agrupados = {};
+
+      for (final t in tratamientos) {
+        agrupados.putIfAbsent(t.idEspecialidad, () => []);
+        agrupados[t.idEspecialidad]!.add(t);
+      }
+
       setState(() {
-        _especialidades = data;
+        _especialidades = especialidades;
+        //_todosTratamientos = tratamientos;
+        _tratamientosPorEspecialidad = agrupados;
         _loading = false;
       });
     } catch (e) {
-      debugPrint('Error al cargar especialidades: $e');
+      debugPrint('Error cargando datos: $e');
       setState(() => _loading = false);
     }
+  }
+
+  // ======================================================
+  // FILTRO INTELIGENTE
+  // ======================================================
+  List<Especialidad> _especialidadesFiltradas() {
+    if (_query.isEmpty) return _especialidades;
+
+    return _especialidades.where((esp) {
+      final matchEspecialidad = esp.nombre.toLowerCase().contains(_query);
+
+      final tratamientos =
+          _tratamientosPorEspecialidad[esp.idEspecialidad] ?? [];
+
+      final matchTratamiento = tratamientos.any(
+        (t) => t.nombre.toLowerCase().contains(_query),
+      );
+
+      return matchEspecialidad || matchTratamiento;
+    }).toList();
+  }
+
+  // ======================================================
+  // RECOMENDACIÓN BUCAL
+  // ======================================================
+  Future<void> _mostrarRecomendacionBucal() async {
+    final cliente = SessionApp.usuarioActual;
+    if (cliente == null) return;
+    await OdontogramaPlanHelper.mostrarPlanDeCuidado(context, ref);
   }
 
   @override
@@ -84,45 +130,31 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
     super.dispose();
   }
 
-  Future<void> _mostrarRecomendacionBucal() async {
-  try {
-    final cliente = SessionApp.usuarioActual;
-    if (cliente == null) return;
-
-    // 👉 LLAMADA CORRECTA
-    await OdontogramaPlanHelper.mostrarPlanDeCuidado(context, ref);
-
-  } catch (e) {
-    debugPrint("❌ Error mostrando recomendación bucal: $e");
-  }
-}
-
-
+  // ======================================================
+  // UI
+  // ======================================================
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-    final List<RecomendPromotion> promotions = PromotionItems(
-      context: context,
-    ).getPromotions();
+    final size = MediaQuery.of(context).size;
+    final promotions = PromotionItems(context: context).getPromotions();
 
     return Stack(
       children: [
         SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
+            children: [
               HeaderWithSearchBox(
                 size: size,
                 searchController: _searchController,
-              ),
-              const SizedBox(height: 15),
-
-              TitleWithMoreBtn(
-                text: 'Servicios Disponibles',
-                press: () {
-                  debugPrint('Ver todo: Servicios disponibles');
+                onChanged: (value) {
+                  setState(() => _query = value.toLowerCase());
                 },
               ),
+
+              const SizedBox(height: 15),
+
+              TitleWithMoreBtn(text: 'Servicios Disponibles', press: () {}),
 
               _loading
                   ? const Center(
@@ -131,35 +163,47 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
                         child: CircularProgressIndicator(),
                       ),
                     )
-                  : _especialidades.isEmpty
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Text('No hay especialidades registradas'),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _especialidades.map((esp) {
-                              final imageUrl = esp.imagen != null
-                                  ? '$baseUrl${esp.imagen}'
-                                  : null;
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _especialidadesFiltradas().map((esp) {
+                          final imageUrl = esp.imagen != null
+                              ? '$baseUrl${esp.imagen}'
+                              : 'assets/images/default_especialidad.png';
 
-                              return Container(
-                                margin: const EdgeInsets.only(left: 16),
-                                child: RecomendPlanCard(
-                                  image: imageUrl ??
-                                      'assets/images/default_especialidad.png',
+                          final tratamientos =
+                              _tratamientosPorEspecialidad[esp
+                                  .idEspecialidad] ??
+                              [];
+
+                          final tratamientosFiltrados = _query.isEmpty
+                              ? []
+                              : tratamientos
+                                    .where(
+                                      (t) => t.nombre.toLowerCase().contains(
+                                        _query,
+                                      ),
+                                    )
+                                    .toList();
+
+                          return Container(
+                            margin: const EdgeInsets.only(left: 16),
+                            width: 260,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RecomendPlanCard(
+                                  image: imageUrl,
                                   title: esp.nombre,
                                   subTitle:
-                                      esp.descripcion ?? 'Especialidad disponible',
+                                      esp.descripcion ??
+                                      'Especialidad disponible',
                                   price: 0.0,
                                   press: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => DetailsScreen(
+                                        builder: (_) => DetailsScreen(
                                           idEspecialidad: esp.idEspecialidad,
                                           nombreEspecialidad: esp.nombre,
                                           imagenEspecialidad: esp.imagen ?? '',
@@ -168,284 +212,84 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
                                     );
                                   },
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
 
-              const SizedBox(height: 15),
+                                if (tratamientosFiltrados.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 8,
+                                      left: 12,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: tratamientosFiltrados.map((t) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.arrow_right,
+                                                size: 18,
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  t.nombre,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+              const SizedBox(height: 20),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 35.0),
+                padding: const EdgeInsets.symmetric(horizontal: 35),
                 child: TitleWithCustomUnderline(text: 'Promociones'),
               ),
+
               const SizedBox(height: 15),
 
-              SizedBox(
-                height: size.width * 0.55,
-                child: PageView.builder(
-                  controller: _promoController,
-                  itemCount: promotions.length,
-                  itemBuilder: (context, index) {
-                    return Center(child: promotions[index]);
-                  },
-                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final screenHeight = MediaQuery.of(context).size.height;
+
+                  final promoHeight = (screenHeight * 0.28).clamp(
+                    180.0,
+                    280.0,
+                  ); // móvil ↔ tablet balanceado
+
+                  return SizedBox(
+                    height: promoHeight,
+                    child: PageView.builder(
+                      controller: _promoController,
+                      itemCount: promotions.length,
+                      itemBuilder: (_, i) => Center(child: promotions[i]),
+                    ),
+                  );
+                },
               ),
+
               const SizedBox(height: 60),
             ],
           ),
         ),
 
-        // ⭐ NO TOCO NADA, sigue funcionando igual
         const FloatingBubble(),
       ],
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-// import 'package:prototipo1_app/config/employed/tratamiento_service.dart';
-// import 'package:prototipo1_app/config/promotions/promotion_items.dart';
-// import 'package:prototipo1_app/presentation/client/Components/floating_bubble.dart';
-// import 'package:prototipo1_app/presentation/client/Components/header_with_searchbox.dart';
-// import 'package:prototipo1_app/presentation/client/Components/recomend_plan_card.dart';
-// import 'package:prototipo1_app/presentation/client/Components/recomend_promotion.dart';
-// import 'package:prototipo1_app/presentation/client/Components/title_with_custom_underline.dart';
-// import 'package:prototipo1_app/presentation/client/screens/details/details_screen.dart';
-// import 'package:prototipo1_app/presentation/employee/dto/especialidad_model.dart';
-// import '../../Components/title_with_more_btn.dart' show TitleWithMoreBtn;
-
-// class BodyScreen extends StatefulWidget {
-//   const BodyScreen({super.key});
-
-//   @override
-//   State<BodyScreen> createState() => _BodyScreenState();
-// }
-
-// class _BodyScreenState extends State<BodyScreen> {
-//   final TextEditingController _searchController = TextEditingController();
-//   final PageController _promoController = PageController(
-//     viewportFraction: 0.75,
-//   );
-//   final TratamientosService _service = TratamientosService();
-
-//   int _currentPage = 0;
-//   Timer? _timer;
-
-//   List<Especialidad> _especialidades = [];
-//   bool _loading = true;
-//   final String baseUrl =
-//       'http://192.168.1.20:3000'; 
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadEspecialidades();
-
-//     // Carrusel automático
-//     _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-//       if (_promoController.hasClients) {
-//         if (_currentPage < 2) {
-//           _currentPage++;
-//         } else {
-//           _currentPage = 0;
-//         }
-//         _promoController.animateToPage(
-//           _currentPage,
-//           duration: const Duration(milliseconds: 600),
-//           curve: Curves.easeInOut,
-//         );
-//       }
-//     });
-//   }
-
-//   Future<void> _loadEspecialidades() async {
-//     try {
-//       final data = await _service.getAllEspecialidades();
-//       setState(() {
-//         _especialidades = data;
-//         _loading = false;
-//       });
-//     } catch (e) {
-//       debugPrint('Error al cargar especialidades: $e');
-//       setState(() => _loading = false);
-//     }
-//   }
-
-//   @override
-//   void dispose() {
-//     _searchController.dispose();
-//     _promoController.dispose();
-//     _timer?.cancel();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     Size size = MediaQuery.of(context).size;
-//     final List<RecomendPromotion> promotions = PromotionItems(
-//       context: context,
-//     ).getPromotions();
-
-//     return Stack(
-//       children: [
-//         SingleChildScrollView(
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: <Widget>[
-//               HeaderWithSearchBox(
-//                 size: size,
-//                 searchController: _searchController,
-//               ),
-//               const SizedBox(height: 15),
-
-//               // ---- SECCIÓN DE SERVICIOS ----
-//               TitleWithMoreBtn(
-//                 text: 'Servicios Disponibles',
-//                 press: () {
-//                   debugPrint('Ver todo: Servicios disponibles');
-//                 },
-//               ),
-
-//               _loading
-//                   ? const Center(
-//                       child: Padding(
-//                         padding: EdgeInsets.all(30),
-//                         child: CircularProgressIndicator(),
-//                       ),
-//                     )
-//                   : _especialidades.isEmpty
-//                   ? const Center(
-//                       child: Padding(
-//                         padding: EdgeInsets.all(20),
-//                         child: Text('No hay especialidades registradas'),
-//                       ),
-//                     )
-//                   : SingleChildScrollView(
-//                       scrollDirection: Axis.horizontal,
-//                       child: Row(
-//                         children: _especialidades.map((esp) {
-//                           final imageUrl = esp.imagen != null
-//                               ? '$baseUrl${esp.imagen}'
-//                               : null;
-
-//                           return Container(
-//                             margin: const EdgeInsets.only(left: 16),
-//                             child: RecomendPlanCard(
-//                               image:
-//                                   imageUrl ??
-//                                   'assets/images/default_especialidad.png',
-//                               title: esp.nombre,
-//                               subTitle:
-//                                   esp.descripcion ?? 'Especialidad disponible',
-//                               price: 0.0,
-//                               press: () {
-//                                 Navigator.push(
-//                                   context,
-//                                   MaterialPageRoute(
-//                                     builder: (context) => DetailsScreen(
-//                                       idEspecialidad: esp.idEspecialidad,
-//                                       nombreEspecialidad: esp.nombre,
-//                                       imagenEspecialidad: esp.imagen ?? '',
-//                                     ),
-//                                   ),
-//                                 );
-//                               },
-//                             ),
-//                           );
-//                         }).toList(),
-//                       ),
-//                     ),
-//                     const SizedBox(height: 15),
-
-//               // ---- SECCIÓN DE PROMOCIONES ----
-//               Padding(
-//                 padding: const EdgeInsets.symmetric(horizontal: 35.0),
-//                 child: TitleWithCustomUnderline(text: 'Promociones'),
-//               ),
-//               const SizedBox(height: 15),
-
-//               SizedBox(
-//                 height: size.width * 0.55,
-//                 child: PageView.builder(
-//                   controller: _promoController,
-//                   itemCount: promotions.length,
-//                   itemBuilder: (context, index) {
-//                     return Center(child: promotions[index]);
-//                   },
-//                 ),
-//               ),
-//               const SizedBox(height: 60),
-//             ],
-//           ),
-//         ),
-
-//         // ---- Burbuja flotante ----
-//         const FloatingBubble(),
-//       ],
-//     );
-//   }
-// }

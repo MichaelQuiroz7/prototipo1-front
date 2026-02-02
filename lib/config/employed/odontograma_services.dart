@@ -25,7 +25,8 @@ class OdontogramaService {
         request: true,
         requestBody: true,
         responseBody: true,
-        logPrint: (obj) => print("OdontogramaAPI → $obj"),
+        logPrint: (obj) => debugPrint('odontograma obtenido correctamente'),
+        //debugPrint('odontograma obtenido: $obj'),
       ),
     );
   }
