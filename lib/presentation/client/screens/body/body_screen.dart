@@ -8,6 +8,7 @@ import 'package:prototipo1_app/config/promotions/promotion_items.dart';
 import 'package:prototipo1_app/presentation/client/Components/floating_bubble.dart';
 import 'package:prototipo1_app/presentation/client/Components/header_with_searchbox.dart';
 import 'package:prototipo1_app/presentation/client/Components/recomend_plan_card.dart';
+import 'package:prototipo1_app/presentation/client/Components/recomend_promotion.dart';
 import 'package:prototipo1_app/presentation/client/Components/title_with_custom_underline.dart';
 import 'package:prototipo1_app/presentation/client/providers/helper/odontograma_plan_helper.dart';
 import 'package:prototipo1_app/presentation/client/screens/details/details_screen.dart';
@@ -15,6 +16,8 @@ import 'package:prototipo1_app/presentation/employee/dto/especialidad_model.dart
 import 'package:prototipo1_app/presentation/employee/dto/tratamiento_model.dart';
 
 import '../../Components/title_with_more_btn.dart';
+// 👇 Si tu proyecto no lo trae por PromotionItems, importa esto:
+// import 'package:prototipo1_app/presentation/client/Components/recomend_promotion.dart';
 
 class BodyScreen extends ConsumerStatefulWidget {
   const BodyScreen({super.key});
@@ -34,13 +37,16 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
   int _currentPage = 0;
 
   List<Especialidad> _especialidades = [];
-  //List<Tratamiento> _todosTratamientos = [];
   Map<int, List<Tratamiento>> _tratamientosPorEspecialidad = {};
 
   bool _loading = true;
   String _query = '';
 
   final String baseUrl = dotenv.env['ENDPOINT_API6'] ?? '';
+
+
+  List<RecomendPromotion> _promotions = []; // si tu tipo es RecomendPromotion, cámbialo a List<RecomendPromotion>
+  // bool _loadingPromos = true; // si quieres loader, pero NO lo agrego para no cambiar diseño
 
   // ======================================================
   // INIT
@@ -49,10 +55,12 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
   void initState() {
     super.initState();
     _loadDatos();
+    _loadPromotions(); // ✅ NUEVO
 
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (_promoController.hasClients) {
-        _currentPage = (_currentPage + 1) % 3;
+      if (_promoController.hasClients && _promotions.isNotEmpty) {
+        // ✅ FIX: ya no es % 3, es % cantidad real
+        _currentPage = (_currentPage + 1) % _promotions.length;
         _promoController.animateToPage(
           _currentPage,
           duration: const Duration(milliseconds: 600),
@@ -64,6 +72,27 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
     Future.delayed(const Duration(milliseconds: 800), () {
       _mostrarRecomendacionBucal();
     });
+  }
+
+  // ======================================================
+  // ✅ NUEVO: cargar promociones desde servicio
+  // ======================================================
+  Future<void> _loadPromotions() async {
+    try {
+      final promos = await PromotionItems(context: context).getPromotions();
+      if (!mounted) return;
+      setState(() {
+        _promotions = promos;
+        // _loadingPromos = false;
+      });
+    } catch (e) {
+      debugPrint('Error cargando promociones: $e');
+      if (!mounted) return;
+      setState(() {
+        _promotions = [];
+        // _loadingPromos = false;
+      });
+    }
   }
 
   // ======================================================
@@ -83,7 +112,6 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
 
       setState(() {
         _especialidades = especialidades;
-        //_todosTratamientos = tratamientos;
         _tratamientosPorEspecialidad = agrupados;
         _loading = false;
       });
@@ -136,7 +164,8 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final promotions = PromotionItems(context: context).getPromotions();
+
+    final promotions = _promotions;
 
     return Stack(
       children: [
@@ -172,19 +201,16 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
                               : 'assets/images/default_especialidad.png';
 
                           final tratamientos =
-                              _tratamientosPorEspecialidad[esp
-                                  .idEspecialidad] ??
-                              [];
+                              _tratamientosPorEspecialidad[esp.idEspecialidad] ??
+                                  [];
 
                           final tratamientosFiltrados = _query.isEmpty
                               ? []
                               : tratamientos
-                                    .where(
-                                      (t) => t.nombre.toLowerCase().contains(
-                                        _query,
-                                      ),
-                                    )
-                                    .toList();
+                                  .where(
+                                    (t) => t.nombre.toLowerCase().contains(_query),
+                                  )
+                                  .toList();
 
                           return Container(
                             margin: const EdgeInsets.only(left: 16),
@@ -195,9 +221,7 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
                                 RecomendPlanCard(
                                   image: imageUrl,
                                   title: esp.nombre,
-                                  subTitle:
-                                      esp.descripcion ??
-                                      'Especialidad disponible',
+                                  subTitle: esp.descripcion ?? 'Especialidad disponible',
                                   price: 0.0,
                                   press: () {
                                     Navigator.push(
@@ -220,8 +244,7 @@ class _BodyScreenState extends ConsumerState<BodyScreen> {
                                       left: 12,
                                     ),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: tratamientosFiltrados.map((t) {
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(

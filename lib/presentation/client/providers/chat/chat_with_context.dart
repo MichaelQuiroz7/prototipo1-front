@@ -22,12 +22,21 @@ class ChatWithContext extends _$ChatWithContext {
   late String chatId;
 
   @override
-  List<types.Message> build() {
-    geminiUser = ref.read(geminiUserProvider);
-    chatUser = ref.read(userPersonProvider);
-    chatId = uuid.v4();
-    return [];
-  }
+List<types.Message> build() {
+  geminiUser = ref.read(geminiUserProvider);
+  chatUser = ref.read(userPersonProvider);
+  chatId = uuid.v4();
+
+  final welcomeMessage = types.TextMessage(
+    author: geminiUser,
+    id: uuid.v4(),
+    text:
+        "👋 Bienvenido a Perfect Teeth.\n\nEstoy aquí para ayudarte con tratamientos, citas o dudas sobre tu salud bucal.\n\n¿En qué puedo ayudarte hoy?",
+  );
+
+  return [welcomeMessage];
+}
+
 
   Future<void> addMessage({
     required types.PartialText partialText,

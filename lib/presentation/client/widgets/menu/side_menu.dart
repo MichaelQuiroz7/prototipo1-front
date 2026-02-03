@@ -28,6 +28,10 @@ class _SideMenuState extends State<SideMenu> {
   @override
   Widget build(BuildContext context) {
     final user = SessionApp.usuarioActual;
+
+
+    final menuItems = AppMenu.items;
+
     return NavigationDrawer(
       selectedIndex: navDrawerIndex,
       onDestinationSelected: (int index) {
@@ -35,27 +39,35 @@ class _SideMenuState extends State<SideMenu> {
           navDrawerIndex = index;
         });
 
-        final selectedItem = appMenuItems[index];
+        final selectedItem = menuItems[index];
         context.push(selectedItem.link);
       },
       children: [
-        // Encabezado de perfil
+        // 🔹 Encabezado de perfil
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(
-                child: CircleAvatar(
+              if (user != null)
+                CircleAvatar(
                   radius: 60,
-                  backgroundImage: NetworkImage(Utils.getProfileImage(user!))),
+                  backgroundImage:
+                      NetworkImage(Utils.getProfileImage(user)),
+                )
+              else
+                const CircleAvatar(
+                  radius: 60,
+                  child: Icon(Icons.person, size: 40),
                 ),
+
               const SizedBox(height: 12),
+
               Text(
                 _buildGreeting(),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -64,10 +76,13 @@ class _SideMenuState extends State<SideMenu> {
 
         const Divider(),
 
-        //  Menú dinámico
-        ...appMenuItems.map((item) {
+        // 🔹 Menú dinámico según rol
+        ...menuItems.map((item) {
           return NavigationDrawerDestination(
-            icon: Icon(item.icon, color: Theme.of(context).colorScheme.primary),
+            icon: Icon(
+              item.icon,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             label: Text(item.title),
           );
         }),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:prototipo1_app/config/client/client_service.dart';
 import 'package:prototipo1_app/presentation/client/dtoCliente/client_model.dart';
 import 'package:prototipo1_app/presentation/client/screens/citas/selectorespecialidad_tratamiento_sheet.dart';
@@ -84,6 +85,20 @@ class _SeleccionarClienteScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: esEmpleado
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.person_add),
+                  tooltip: "Agregar empleado",
+                  onPressed: () {
+                    context.push(
+                      '/register',
+                      extra: widget.idRol,
+                    );
+                  },
+                ),
+              ]
+            : null,
       ),
       body: Column(
         children: [
@@ -93,9 +108,8 @@ class _SeleccionarClienteScreenState
               controller: _search,
               onChanged: _filtrar,
               decoration: InputDecoration(
-                labelText: esEmpleado
-                    ? "Buscar empleado"
-                    : "Buscar paciente",
+                labelText:
+                    esEmpleado ? "Buscar empleado" : "Buscar paciente",
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -123,7 +137,6 @@ class _SeleccionarClienteScreenState
                             const Icon(Icons.arrow_forward_ios),
                         onTap: () {
                           if (esEmpleado) {
-                            
                             Navigator.pop(context, c);
                           } else {
                             _mostrarOpcionesCliente(c);

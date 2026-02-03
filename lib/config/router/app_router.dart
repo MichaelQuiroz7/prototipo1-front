@@ -1,14 +1,16 @@
 import 'package:go_router/go_router.dart';
 import 'package:prototipo1_app/config/client/session.dart';
 import 'package:prototipo1_app/presentation/client/screens/Home/home_screen.dart';
+import 'package:prototipo1_app/presentation/client/screens/about_us/dental_about_page.dart';
 import 'package:prototipo1_app/presentation/client/screens/basic_prompt/basic_prompt_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/chat_context/chat_context_screen.dart';
-//import 'package:prototipo1_app/presentation/client/screens/citas/appointment_schedule_screen.dart';
+import 'package:prototipo1_app/presentation/client/screens/citas/gestion_citas_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/client/login/login_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/client/login/register_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/client/profile_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/odontograma/odontograma_cliente_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/promociones/categories_screen.dart';
+import 'package:prototipo1_app/presentation/client/screens/ranking/ranking_tratamientos_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/statistics/statistics_screen.dart';
 import 'package:prototipo1_app/presentation/client/screens/suggestion%20box/suggestion_box_screen.dart';
 import 'package:prototipo1_app/presentation/employee/screens/Seleccionar_Cliente_Screen.dart';
@@ -18,7 +20,8 @@ final appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
     final usuario = SessionApp.usuarioActual;
-    final isLoggingIn = state.matchedLocation == '/login' ||
+    final isLoggingIn =
+        state.matchedLocation == '/login' ||
         state.matchedLocation == '/register';
 
     // No hay sesión → forzar login
@@ -31,19 +34,19 @@ final appRouter = GoRouter(
     //   return '/home';
     // }
 
-     return null; // no redirección
+    return null; // no redirección
   },
   routes: [
     GoRoute(path: '/', builder: (context, state) => HomeScreen()),
     GoRoute(path: '/home', builder: (context, state) => HomeScreen()),
 
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterScreen(),
+      builder: (context, state) {
+        final int? idRol = state.extra as int?;
+        return RegisterScreen(idRolRegister: idRol);
+      },
     ),
 
     GoRoute(
@@ -63,12 +66,12 @@ final appRouter = GoRouter(
       builder: (context, state) => const EspecialidadesScreen(),
     ),
     GoRoute(
-  path: '/clientes',
-  builder: (context, state) {
-    final idRol = state.extra as int?;
-    return SeleccionarClienteScreen(idRol: idRol);
-  },
-),
+      path: '/clientes',
+      builder: (context, state) {
+        final idRol = state.extra as int?;
+        return SeleccionarClienteScreen(idRol: idRol);
+      },
+    ),
 
     GoRoute(
       path: '/odontogramaCliente',
@@ -85,6 +88,20 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/categorias',
       builder: (context, state) => CategoriesScreen(),
+    ),
+    GoRoute(
+      path: '/aboutUs',
+      builder: (context, state) => const DentalAboutPage(),
+    ),
+    GoRoute(
+      path: '/ranking',
+      builder: (context, state) {
+        return const RankingTratamientosScreen();
+      },
+    ),
+    GoRoute(
+      path: '/citas',
+      builder: (context, state) => const GestionCitasScreen(),
     ),
   ],
 );

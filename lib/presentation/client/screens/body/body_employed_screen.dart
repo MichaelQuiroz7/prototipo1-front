@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prototipo1_app/config/client/session.dart';
 import 'package:prototipo1_app/presentation/client/Components/animated_dashboard_card.dart';
 
 class BodyEmployedScreen extends StatelessWidget {
@@ -34,80 +35,89 @@ class BodyEmployedScreen extends StatelessWidget {
       children: const [
         Text(
           'Dashboard | Perfect Teeth',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 4),
-        Text(
-          'Overview',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-          ),
-        ),
+        Text('Overview', style: TextStyle(fontSize: 14, color: Colors.grey)),
       ],
     );
   }
 
   // ---------------- RESPONSIVE GRID ----------------
   Widget _responsiveGrid(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isTablet = constraints.maxWidth >= 600;
+  final usuario = SessionApp.usuarioActual;
+  final idRol = usuario?.idRol;
 
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: isTablet ? 4 : 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.4,
-          children: [
-            AnimatedDashboardCard(
-              title: 'Promociones',
-              value: '4',
-              icon: Icons.local_offer,
-              color: Colors.orange,
-              onTap: () {
-                context.push('/categorias');
-              },
-            ),
-            AnimatedDashboardCard(
-              title: 'Pacientes',
-              value: '128',
-              icon: Icons.groups,
-              color: Colors.blue,
-              onTap: () {
-                // 🔹 NO enviamos nada → carga clientes
-                context.push('/clientes');
-              },
-            ),
-            const AnimatedDashboardCard(
-              title: 'Reseñas',
-              value: '56',
-              icon: Icons.star_rate,
-              color: Colors.amber,
-            ),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final isTablet = constraints.maxWidth >= 600;
+
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: isTablet ? 4 : 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.4,
+        children: [
+
+          AnimatedDashboardCard(
+            title: 'Promociones',
+            value: '4',
+            icon: Icons.local_offer,
+            color: Colors.orange,
+            onTap: () {
+              context.push('/categorias');
+            },
+          ),
+
+          AnimatedDashboardCard(
+            title: 'Pacientes',
+            value: '128',
+            icon: Icons.groups,
+            color: Colors.blue,
+            onTap: () {
+              context.push('/clientes');
+            },
+          ),
+
+          AnimatedDashboardCard(
+            title: 'Reseñas',
+            value: '56',
+            icon: Icons.star_rate,
+            color: Colors.amber,
+            onTap: () {
+              context.push('/ranking');
+            },
+          ),
+
+          // 🔹 SOLO SI ES ADMIN (idRol == 1)
+          if (idRol == 1)
             AnimatedDashboardCard(
               title: 'Especialistas',
               value: '8',
               icon: Icons.medical_services,
               color: Colors.green,
               onTap: () {
-                // 🔥 AQUÍ enviamos idRol = 2
-                context.push(
-                  '/clientes',
-                  extra: 2,
-                );
+                context.push('/clientes', extra: 2);
               },
             ),
-          ],
-        );
-      },
-    );
-  }
+
+          AnimatedDashboardCard(
+            title: 'Citas',
+            value: '32',
+            icon: Icons.calendar_month,
+            color: Colors.purple,
+            onTap: () {
+              context.push('/citas'); 
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   // ---------------- EARNINGS SECTION ----------------
   Widget _earningsSection(BuildContext context) {
@@ -124,10 +134,7 @@ class BodyEmployedScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             '343.695',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
           _barChart(),
@@ -144,10 +151,7 @@ class BodyEmployedScreen extends StatelessWidget {
       children: const [
         Text(
           'Gráficos de ingresos',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         Text(
           'Movimientos',
@@ -188,17 +192,10 @@ class BodyEmployedScreen extends StatelessWidget {
         children: const [
           Text(
             'Consultar estadísticas',
-            style: TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
           ),
           SizedBox(width: 6),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.blue,
-          ),
+          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.blue),
         ],
       ),
     );
@@ -210,11 +207,7 @@ class BarItem extends StatelessWidget {
   final String label;
   final double height;
 
-  const BarItem({
-    super.key,
-    required this.label,
-    required this.height,
-  });
+  const BarItem({super.key, required this.label, required this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -232,13 +225,7 @@ class BarItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );

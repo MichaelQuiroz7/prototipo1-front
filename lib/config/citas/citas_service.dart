@@ -119,7 +119,7 @@ Future<List<CitaEntity>> obtenerCitasPorCliente(int idCliente) async {
   /// Eliminar cita (lógico)
   Future<void> cancelar(int id) async {
     try {
-      await _dio.delete('cancelar/$id');
+      await _dio.delete('/cancelar/$id');
     } on DioException catch (e) {
       _handleError(e);
       rethrow;
@@ -127,7 +127,7 @@ Future<List<CitaEntity>> obtenerCitasPorCliente(int idCliente) async {
   }
   Future<void> reagendar(int id) async {
     try {
-      await _dio.delete('reagendar/$id');
+      await _dio.delete('/reagendar/$id');
     } on DioException catch (e) {
       _handleError(e);
       rethrow;
@@ -136,7 +136,8 @@ Future<List<CitaEntity>> obtenerCitasPorCliente(int idCliente) async {
 
   Future<void> noasistio(int id) async {
     try {
-      await _dio.delete('noasistio/$id');
+      print(  'id en servicio: $id');
+      await _dio.delete('/noasistio/$id');
     } on DioException catch (e) {
       _handleError(e);
       rethrow;

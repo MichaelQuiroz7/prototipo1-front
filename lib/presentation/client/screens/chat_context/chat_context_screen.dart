@@ -8,42 +8,65 @@ import 'package:prototipo1_app/presentation/client/providers/chat/is_gemini_writ
 import 'package:prototipo1_app/presentation/client/providers/users/user_povider.dart';
 import 'package:prototipo1_app/presentation/client/widgets/Chat/custom_bottom_input.dart';
 
-final messages = <types.Message>[];
-
 class ChatContextScreen extends ConsumerWidget {
-
   const ChatContextScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    // 👇 Forzamos inicialización del provider (mensaje bienvenida)
+    ref.watch(chatWithContextProvider);
+
     final userGemini = ref.watch(geminiUserProvider);
     final user = ref.watch(userPersonProvider);
     final isGeminiWriting = ref.watch(isGeminiWritingProvider);
     final messages = ref.watch(chatWithContextProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(
+        title: const Text('Perfect Teeth Assistant'),
+      ),
       body: ValueListenableBuilder<bool>(
         valueListenable: isDarkModeNotifier,
         builder: (context, isDarkMode, _) {
           return Chat(
             messages: messages,
-            onSendPressed: (_) { },
+            onSendPressed: (_) {},
             user: user,
-            theme: isDarkMode ? DarkChatTheme() : DefaultChatTheme(),
+            theme: isDarkMode
+                ? const DarkChatTheme()
+                : const DefaultChatTheme(),
             showUserNames: true,
             showUserAvatars: true,
 
-            //Custom input area
+            // ===============================
+            // INPUT PERSONALIZADO
+            // ===============================
             customBottomWidget: CustomBottomInput(
               onSend: (partialText, {images = const []}) {
-                final chatNotifier = ref.read(chatWithContextProvider.notifier);
-                chatNotifier.addMessage(partialText: partialText, author: user, images: images);
+                final chatNotifier =
+                    ref.read(chatWithContextProvider.notifier);
+
+                chatNotifier.addMessage(
+                  partialText: partialText,
+                  author: user,
+                  images: images,
+                );
               },
             ),
 
+            // ===============================
+            // INDICADOR DE ESCRITURA
+            // ===============================
             typingIndicatorOptions: TypingIndicatorOptions(
               typingUsers: isGeminiWriting ? [userGemini] : [],
-              customTypingWidget: const Center(child: Text('escribiendo...')),
+              customTypingWidget: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  'Perfect Teeth está escribiendo...',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
             ),
           );
         },
